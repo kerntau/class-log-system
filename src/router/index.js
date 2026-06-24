@@ -32,6 +32,11 @@ const routes = [
     component: () => import('@/views/DataFilesView.vue'),
   },
   {
+    path: '/notifications',
+    name: 'Notifications',
+    component: () => import('@/views/NotificationView.vue'),
+  },
+  {
     path: '/profile',
     component: () => import('@/views/ProfileView.vue'),
     children: [

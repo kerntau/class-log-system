@@ -1,5 +1,14 @@
 <script setup>
-import { ClipboardCheck, Database, FilePenLine, FolderClock, Home, ShieldCheck, UserRound } from '@lucide/vue'
+import {
+  Bell,
+  ClipboardCheck,
+  Database,
+  FilePenLine,
+  FolderClock,
+  Home,
+  ShieldCheck,
+  UserRound,
+} from '@lucide/vue'
 
 defineProps({
   role: {
@@ -13,6 +22,7 @@ const navItems = [
   { label: '填报日志', path: '/logs/create', icon: FilePenLine, studentOnly: true },
   { label: '日志记录', path: '/logs', icon: FolderClock },
   { label: '审批管理', path: '/approval', icon: ClipboardCheck, teacherOnly: true },
+  { label: '消息中心', path: '/notifications', icon: Bell },
   { label: '数据文件', path: '/data-files', icon: Database, adminOnly: true },
   { label: '个人中心', path: '/profile/info', icon: UserRound },
 ]

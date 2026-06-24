@@ -11,30 +11,55 @@ const route = useRoute()
 const router = useRouter()
 const log = ref(getLogById(route.params.id))
 
-const fields = computed(() => {
+function handlePrint() {
+  window.print()
+}
+
+// 按区块分组展示字段
+const fieldGroups = computed(() => {
   if (!log.value) return []
   return [
-    ['填报人', log.value.studentName],
-    ['学号', log.value.studentNo],
-    ['班级', log.value.className],
-    ['日期', log.value.logDate],
-    ['周次', log.value.week],
-    ['星期', log.value.weekday],
-    ['课程名称', log.value.courseName],
-    ['任课教师', log.value.teacherName],
-    ['上课节次', log.value.section],
-    ['教室', log.value.classroom],
-    ['到课人数', log.value.attendanceCount],
-    ['请假人数', log.value.leaveCount],
-    ['迟到早退', log.value.lateInfo],
-    ['课堂纪律', log.value.discipline],
-    ['教学设备', log.value.deviceStatus],
-    ['异常情况', log.value.abnormalInfo],
-    ['备注', log.value.remark || '无'],
-    ['提交时间', log.value.submitTime],
-    ['审批人', log.value.approver || '暂无'],
-    ['审批意见', log.value.approveOpinion || '暂无'],
-    ['审批时间', log.value.approveTime || '暂无'],
+    {
+      title: '基础信息',
+      items: [
+        ['填报人', log.value.studentName],
+        ['学号', log.value.studentNo],
+        ['班级', log.value.className],
+        ['日期', log.value.logDate],
+        ['周次', log.value.week],
+        ['星期', log.value.weekday],
+      ],
+    },
+    {
+      title: '课程信息',
+      items: [
+        ['课程名称', log.value.courseName],
+        ['任课教师', log.value.teacherName],
+        ['上课节次', log.value.section],
+        ['教室', log.value.classroom],
+        ['到课人数', log.value.attendanceCount],
+        ['请假人数', log.value.leaveCount],
+      ],
+    },
+    {
+      title: '课堂情况',
+      items: [
+        ['迟到早退', log.value.lateInfo],
+        ['课堂纪律', log.value.discipline],
+        ['教学设备', log.value.deviceStatus],
+        ['异常情况', log.value.abnormalInfo],
+        ['备注', log.value.remark || '无'],
+      ],
+    },
+    {
+      title: '审批信息',
+      items: [
+        ['提交时间', log.value.submitTime],
+        ['审批人', log.value.approver || '暂无'],
+        ['审批意见', log.value.approveOpinion || '暂无'],
+        ['审批时间', log.value.approveTime || '暂无'],
+      ],
+    },
   ]
 })
 </script>
@@ -46,7 +71,7 @@ const fields = computed(() => {
         <ArrowLeft :size="16" aria-hidden="true" />
         返回
       </button>
-      <button v-if="log" class="secondary-button" type="button" @click="window.print()">
+      <button v-if="log" class="secondary-button" type="button" @click="handlePrint">
         <Printer :size="16" aria-hidden="true" />
         打印
       </button>
@@ -72,12 +97,17 @@ const fields = computed(() => {
               <h2>完整填报信息</h2>
             </div>
           </header>
-          <dl class="detail-grid">
-            <div v-for="[label, value] in fields" :key="label">
-              <dt>{{ label }}</dt>
-              <dd>{{ value }}</dd>
+          <div class="field-groups">
+            <div v-for="group in fieldGroups" :key="group.title" class="field-group">
+              <h3 class="field-group-title">{{ group.title }}</h3>
+              <dl class="detail-grid">
+                <div v-for="[label, value] in group.items" :key="label">
+                  <dt>{{ label }}</dt>
+                  <dd>{{ value }}</dd>
+                </div>
+              </dl>
             </div>
-          </dl>
+          </div>
         </section>
 
         <section class="panel">
@@ -93,3 +123,20 @@ const fields = computed(() => {
     </template>
   </section>
 </template>
+
+<style scoped>
+.field-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.field-group-title {
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--primary-soft);
+  color: var(--primary);
+  font-size: 15px;
+  font-weight: 700;
+}
+</style>

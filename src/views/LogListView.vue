@@ -22,7 +22,12 @@ function refreshLogs() {
 
 const filteredLogs = computed(() => {
   return logs.value.filter((log) => {
-    const roleMatched = currentRole.value === 'student' ? log.studentNo === currentUser.value.studentNo : true
+    let roleMatched = true
+    if (currentRole.value === 'student') {
+      roleMatched = log.studentNo === currentUser.value.studentNo
+    } else if (currentRole.value === 'teacher') {
+      roleMatched = log.className === currentUser.value.className
+    }
     const statusMatched = statusFilter.value === 'all' ? true : log.status === statusFilter.value
     const keyword = searchKeyword.value.trim()
     const keywordMatched = keyword
@@ -62,14 +67,8 @@ function resetData() {
 }
 
 function downloadData() {
-  const content = JSON.stringify(exportFileData(), null, 2)
-  const blob = new Blob([content], { type: 'application/json;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = `class-log-data-${new Date().toISOString().slice(0, 10)}.json`
-  anchor.click()
-  URL.revokeObjectURL(url)
+  // exportFileData 内部已处理文件下载
+  exportFileData()
 }
 </script>
 
@@ -81,9 +80,14 @@ function downloadData() {
         <h1>日志记录</h1>
         <p>按状态、课程、班级、日期快速查询班级日志。</p>
       </div>
-      <button class="primary-button" type="button" @click="router.push('/logs/create')">
+      <button
+        v-if="currentRole === 'student'"
+        class="primary-button"
+        type="button"
+        @click="router.push('/logs/create')"
+      >
         <FilePlus2 :size="18" aria-hidden="true" />
-        新增日志
+        填报日志
       </button>
     </div>
 
@@ -128,7 +132,7 @@ function downloadData() {
         <EmptyState
           v-if="filteredLogs.length === 0"
           text="没有符合条件的日志"
-          action-text="新增日志"
+          :action-text="currentRole === 'student' ? '填报日志' : ''"
           @action="router.push('/logs/create')"
         />
       </div>

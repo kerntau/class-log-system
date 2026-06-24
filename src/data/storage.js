@@ -127,17 +127,22 @@ export function resetDemoData() {
   notificationsCache = []
 }
 
-// 导出数据（下载为 JSON 文件）
-export function exportFileData() {
-  const data = {
+// 构建导出数据对象（无副作用）
+export function buildExportData() {
+  return {
     version: 1,
     exportedAt: formatDateTime(),
     user: getUser(),
     logs: getLogs(),
     notifications: getNotifications(),
   }
+}
 
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+// 导出数据（下载为 JSON 文件）
+export function exportFileData() {
+  const data = buildExportData()
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url

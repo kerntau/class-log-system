@@ -3,6 +3,7 @@ import { computed, inject, ref } from 'vue'
 import { Database, Download, FileJson, LockKeyhole, RotateCcw, Upload } from '@lucide/vue'
 import EmptyState from '@/components/EmptyState.vue'
 import {
+  buildExportData,
   exportFileData,
   getLogs,
   importFileData,
@@ -16,7 +17,7 @@ const fileInput = ref(null)
 const message = ref('')
 
 const canManage = computed(() => currentRole.value === 'admin')
-const dataSize = computed(() => `${(JSON.stringify(exportFileData()).length / 1024).toFixed(1)} KB`)
+const dataSize = computed(() => `${(JSON.stringify(buildExportData()).length / 1024).toFixed(1)} KB`)
 const pendingCount = computed(() => logs.value.filter((log) => log.status === 'pending').length)
 
 function refreshLogs() {
@@ -24,14 +25,7 @@ function refreshLogs() {
 }
 
 function downloadData() {
-  const content = JSON.stringify(exportFileData(), null, 2)
-  const blob = new Blob([content], { type: 'application/json;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = `class-log-data-${new Date().toISOString().slice(0, 10)}.json`
-  anchor.click()
-  URL.revokeObjectURL(url)
+  exportFileData()
   message.value = '数据文件已导出'
 }
 

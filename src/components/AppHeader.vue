@@ -1,10 +1,11 @@
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Bell, Building2, UserRound } from '@lucide/vue'
 import RoleSwitcher from './RoleSwitcher.vue'
 import { getNotifications } from '@/data/storage'
 
-defineProps({
+const props = defineProps({
   role: {
     type: String,
     required: true,
@@ -16,10 +17,23 @@ defineProps({
 })
 
 const emit = defineEmits(['role-change'])
+const router = useRouter()
 
 const unreadCount = computed(() => {
-  return getNotifications().filter((n) => !n.read).length
+  // 依赖 route 变化触发重新计算
+  router.currentRoute.value.path
+  const notifications = getNotifications()
+  if (props.role === 'student') {
+    return notifications.filter(
+      (n) => !n.read && (!n.targetStudentNo || n.targetStudentNo === props.user.studentNo),
+    ).length
+  }
+  return notifications.filter((n) => !n.read).length
 })
+
+function goToNotifications() {
+  router.push('/notifications')
+}
 </script>
 
 <template>
@@ -39,7 +53,12 @@ const unreadCount = computed(() => {
         <strong>{{ user.name }}</strong>
         <span>{{ user.className }} · {{ user.studentNo }}</span>
       </div>
-      <button class="icon-button notification-button" type="button" aria-label="通知">
+      <button
+        class="icon-button notification-button"
+        type="button"
+        aria-label="通知"
+        @click="goToNotifications"
+      >
         <Bell :size="18" aria-hidden="true" />
         <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount }}</span>
       </button>
