@@ -12,6 +12,7 @@ import {
 
 const currentRole = inject('currentRole')
 const refreshUser = inject('refreshUser')
+const showConfirm = inject('showConfirm')
 const logs = ref(getLogs())
 const fileInput = ref(null)
 const message = ref('')
@@ -53,8 +54,9 @@ function importData(event) {
   reader.readAsText(file, 'utf-8')
 }
 
-function resetData() {
-  if (!window.confirm('确认恢复初始 JSON 数据吗？当前本机数据会被覆盖。')) return
+async function resetData() {
+  const confirmed = await showConfirm('确认恢复初始 JSON 数据吗？当前本机数据会被覆盖。')
+  if (!confirmed) return
   resetDemoData()
   refreshLogs()
   refreshUser()

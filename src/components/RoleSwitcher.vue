@@ -1,7 +1,5 @@
 <script setup>
-import { computed } from 'vue'
-import { ChevronDown } from '@lucide/vue'
-import { roleOptions } from '@/data/mockData'
+import { UserCheck, ClipboardCheck, Shield } from '@lucide/vue'
 
 const props = defineProps({
   modelValue: {
@@ -10,25 +8,34 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:modelValue', 'change'])
+const emit = defineEmits(['update:modelValue'])
 
-const selectedRole = computed({
-  get: () => props.modelValue,
-  set: (value) => {
+const roles = [
+  { label: '学生', value: 'student', icon: UserCheck },
+  { label: '辅导员', value: 'teacher', icon: ClipboardCheck },
+  { label: '管理员', value: 'admin', icon: Shield },
+]
+
+function select(value) {
+  if (value !== props.modelValue) {
     emit('update:modelValue', value)
-    emit('change', value)
-  },
-})
+  }
+}
 </script>
 
 <template>
-  <label class="role-switcher">
-    <span>当前角色</span>
-    <select v-model="selectedRole" aria-label="切换当前角色">
-      <option v-for="role in roleOptions" :key="role.value" :value="role.value">
-        {{ role.label }}
-      </option>
-    </select>
-    <ChevronDown :size="16" aria-hidden="true" />
-  </label>
+  <div class="role-switcher" role="radiogroup" aria-label="切换角色">
+    <button
+      v-for="role in roles"
+      :key="role.value"
+      :class="['role-btn', { active: modelValue === role.value }]"
+      type="button"
+      role="radio"
+      :aria-checked="modelValue === role.value"
+      @click="select(role.value)"
+    >
+      <component :is="role.icon" :size="14" aria-hidden="true" />
+      {{ role.label }}
+    </button>
+  </div>
 </template>

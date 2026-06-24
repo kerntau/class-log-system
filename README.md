@@ -1,5 +1,94 @@
-# Vue 3 + Vite
+# 班级日志管理系统
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+基于 Vue 3 + Vite 构建的课堂日志填报与审批管理系统，支持学生填报、辅导员审批、管理员数据管理三种角色。
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## 功能概览
+
+| 角色 | 功能 |
+|------|------|
+| 学生 | 填报日志、保存草稿、提交审批、撤回待审批日志、查看审批进度 |
+| 辅导员 | 审批日志（通过/退回）、填写审批意见、查看班级日志 |
+| 管理员 | 全局数据管理、导入导出 JSON 文件、恢复初始数据 |
+
+### 核心页面
+
+- **工作台** — 角色差异化首页，展示统计卡片、最近动态、待办提醒
+- **记录库** — 日志列表，支持状态筛选和关键词搜索
+- **日志填报** — 完整表单，含基础信息、课程信息、课堂情况、补充说明
+- **日志详情** — 表单内容展示 + 审批流程时间线
+- **审批管理** — 待审批日志处理，支持快捷意见模板
+- **站内通知** — 审批结果通知、系统公告，支持已读/删除
+- **数据文件** — JSON 数据导入导出、文件预览
+- **个人资料** — 按角色展示不同字段，学生资料修改自动同步日志
+
+## 技术栈
+
+- **框架**: Vue 3 (Composition API + `<script setup>`)
+- **构建**: Vite
+- **路由**: Vue Router 4
+- **图标**: Lucide Vue
+- **数据**: JSON 文件 + 内存缓存（无后端依赖）
+- **样式**: 纯 CSS，CSS 变量主题系统
+
+## 项目结构
+
+```
+src/
+├── components/          # 通用组件
+│   ├── AppHeader.vue    # 顶部导航栏（含汉堡菜单）
+│   ├── AppToast.vue     # 全局提示
+│   ├── ApprovalDialog.vue # 审批弹窗
+│   ├── ConfirmDialog.vue  # 确认弹窗
+│   ├── EmptyState.vue   # 空状态占位
+│   ├── LogRecordItem.vue # 日志列表项
+│   ├── RoleSwitcher.vue # 角色切换器
+│   ├── StatusTag.vue    # 状态标签
+│   └── Timeline.vue     # 时间线组件
+├── data/
+│   ├── mockData.js      # 模拟数据（24条日志 + 12条通知）
+│   └── storage.js       # 数据存储层（内存缓存 + JSON 文件）
+├── router/
+│   └── index.js         # 路由配置 + 角色守卫
+├── views/               # 页面组件
+├── App.vue              # 根组件
+├── main.js              # 入口
+└── style.css            # 全局样式
+public/
+├── data/
+│   ├── logs.json        # 日志数据
+│   └── notifications.json # 通知数据
+└── logo.jpg             # 网站图标
+```
+
+## 快速开始
+
+```bash
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run dev
+
+# 构建生产版本
+npm run build
+```
+
+## 数据说明
+
+系统使用 JSON 文件作为数据源，首次加载后缓存在内存中：
+
+- `public/data/logs.json` — 日志记录（24 条，覆盖 5 名学生、3 个班级、5 种状态）
+- `public/data/notifications.json` — 站内通知（12 条，含审批结果和系统公告）
+
+管理员可通过「数据文件」页面导入导出数据，或恢复初始数据。
+
+## 响应式适配
+
+- **桌面端** (> 1024px) — 双栏布局，完整导航
+- **平板端** (768px - 1024px) — 单栏布局，导航保持
+- **手机端** (≤ 768px) — 汉堡菜单，全宽按钮，触摸友好 (44px)
+- **小屏手机** (≤ 480px) — 紧凑间距，卡片纵向排列
+
+## 许可证
+
+MIT

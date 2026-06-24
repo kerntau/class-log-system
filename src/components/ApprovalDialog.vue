@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { inject, ref, watch } from 'vue'
 import { X } from '@lucide/vue'
 
 const props = defineProps({
@@ -14,6 +14,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['approve', 'reject', 'close'])
+const showToast = inject('showToast')
 const opinion = ref('')
 
 // 快捷审批意见模板
@@ -33,7 +34,7 @@ function applyTemplate(template) {
 
 function submit(result) {
   if (!opinion.value.trim()) {
-    window.alert('请填写审批意见')
+    showToast('请填写审批意见', 'warning')
     return
   }
 
@@ -112,7 +113,7 @@ function submit(result) {
 
 <style scoped>
 .template-section {
-  padding: 0 28px 20px;
+  padding: 0 24px 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;

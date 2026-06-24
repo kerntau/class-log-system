@@ -1,7 +1,7 @@
 <script setup>
 import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { LockKeyhole, SearchCheck } from '@lucide/vue'
+import { LockKeyhole } from '@lucide/vue'
 import ApprovalDialog from '@/components/ApprovalDialog.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import LogRecordItem from '@/components/LogRecordItem.vue'
@@ -16,7 +16,7 @@ const dialogVisible = ref(false)
 
 watch(currentRole, refreshLogs)
 
-const canApprove = computed(() => currentRole.value !== 'student')
+const canApprove = computed(() => currentRole.value === 'teacher')
 
 // 辅导员只能看本班级的待审批日志，管理员可看全部
 const pendingLogs = computed(() => {
@@ -100,19 +100,12 @@ function handleResult({ id, opinion }, result) {
           <p class="eyebrow">待办数量 {{ pendingLogs.length }}</p>
           <h2>{{ currentRole === 'teacher' ? `${currentUser.className} 待审批日志` : '全部待审批日志' }}</h2>
         </div>
-        <button class="secondary-button" type="button" @click="router.push('/logs')">
-          <SearchCheck :size="16" aria-hidden="true" />
-          查看全部日志
-        </button>
       </header>
 
       <div class="stack">
         <article v-for="log in pendingLogs" :key="log.id" class="approval-item">
           <LogRecordItem :log="log" @view="router.push(`/logs/detail/${$event}`)" />
           <div class="approval-actions">
-            <button class="ghost-button" type="button" @click="router.push(`/logs/detail/${log.id}`)">
-              查看详情
-            </button>
             <button class="primary-button" type="button" @click="openDialog(log)">审批处理</button>
           </div>
         </article>

@@ -6,8 +6,6 @@ import {
   ClipboardCheck,
   Database,
   FileText,
-  FolderClock,
-  PenLine,
   SearchCheck,
   ShieldCheck,
   UserCheck,
@@ -32,7 +30,7 @@ const roleMeta = computed(() => {
       label: '学生工作台',
       title: '班级日志填报与管理',
       intro: '按课程如实填报班级日志，提交后等待辅导员审批。可随时查看草稿和审批进度。',
-      icon: PenLine,
+      icon: FileText,
       primaryText: '填报日志',
       primaryPath: '/logs/create',
     },
@@ -114,10 +112,6 @@ const relationSteps = [
             <component :is="roleMeta.icon" :size="18" aria-hidden="true" />
             {{ roleMeta.primaryText }}
           </button>
-          <button class="ghost-button" type="button" @click="router.push('/logs')">
-            <FolderClock :size="18" aria-hidden="true" />
-            查看记录
-          </button>
         </div>
       </div>
 
@@ -125,12 +119,10 @@ const relationSteps = [
         <div class="identity-avatar">{{ currentUser.name.slice(0, 1) }}</div>
         <div>
           <strong>{{ currentUser.name }}</strong>
-          <span>{{ currentUser.className }} · {{ currentUser.studentNo }}</span>
+          <span v-if="currentRole === 'student'">{{ currentUser.className }} · {{ currentUser.studentNo }}</span>
+          <span v-else-if="currentRole === 'teacher'">{{ currentUser.className }} · {{ currentUser.title }}</span>
+          <span v-else>{{ currentUser.department }} · {{ currentUser.title }}</span>
         </div>
-        <button class="secondary-button" type="button" @click="router.push('/profile/info')">
-          <PenLine :size="16" aria-hidden="true" />
-          修改资料
-        </button>
       </div>
     </div>
 
@@ -280,5 +272,18 @@ const relationSteps = [
 .notice-card button {
   margin-left: auto;
   flex-shrink: 0;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .notice-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .notice-card button {
+    margin-left: 0;
+    width: 100%;
+  }
 }
 </style>

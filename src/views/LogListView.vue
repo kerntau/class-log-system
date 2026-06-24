@@ -1,15 +1,16 @@
 <script setup>
 import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Download, FilePlus2, RotateCcw, Search } from '@lucide/vue'
+import { FilePlus2, Search } from '@lucide/vue'
 import EmptyState from '@/components/EmptyState.vue'
 import LogRecordItem from '@/components/LogRecordItem.vue'
 import { statusOptions } from '@/data/mockData'
-import { deleteLog, exportFileData, formatDateTime, getLogById, getLogs, resetDemoData, updateLog } from '@/data/storage'
+import { deleteLog, formatDateTime, getLogById, getLogs, updateLog } from '@/data/storage'
 
 const router = useRouter()
 const currentRole = inject('currentRole')
 const currentUser = inject('currentUser')
+const showConfirm = inject('showConfirm')
 const logs = ref(getLogs())
 const statusFilter = ref('all')
 const searchKeyword = ref('')
@@ -39,10 +40,11 @@ const filteredLogs = computed(() => {
   })
 })
 
-function withdrawLog(id) {
+async function withdrawLog(id) {
   const log = getLogById(id)
   if (!log || log.status !== 'pending') return
-  if (!window.confirm('确认撤回这条待审批日志吗？')) return
+  const confirmed = await showConfirm('确认撤回这条待审批日志吗？')
+  if (!confirmed) return
 
   updateLog(id, {
     status: 'withdrawn',
@@ -54,21 +56,11 @@ function withdrawLog(id) {
   refreshLogs()
 }
 
-function removeLog(id) {
-  if (!window.confirm('确认删除这条日志吗？删除后不可恢复。')) return
+async function removeLog(id) {
+  const confirmed = await showConfirm('确认删除这条日志吗？删除后不可恢复。')
+  if (!confirmed) return
   deleteLog(id)
   refreshLogs()
-}
-
-function resetData() {
-  if (!window.confirm('确认恢复演示数据吗？当前本机日志数据会被覆盖。')) return
-  resetDemoData()
-  refreshLogs()
-}
-
-function downloadData() {
-  // exportFileData 内部已处理文件下载
-  exportFileData()
 }
 </script>
 
@@ -108,14 +100,6 @@ function downloadData() {
             <input v-model="searchKeyword" type="search" placeholder="搜索课程、班级、教师、日期" />
           </div>
         </label>
-        <button v-if="currentRole === 'admin'" class="secondary-button" type="button" @click="downloadData">
-          <Download :size="16" aria-hidden="true" />
-          导出 JSON
-        </button>
-        <button v-if="currentRole === 'admin'" class="secondary-button" type="button" @click="resetData">
-          <RotateCcw :size="16" aria-hidden="true" />
-          恢复初始数据
-        </button>
       </div>
 
       <div class="stack">

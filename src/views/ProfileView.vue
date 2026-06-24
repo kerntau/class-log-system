@@ -1,8 +1,5 @@
 <script setup>
-const tabs = [
-  { label: '个人资料', path: '/profile/info' },
-  { label: '我的日志', path: '/profile/my-logs' },
-]
+import ProfileInfo from '@/views/ProfileInfo.vue'
 </script>
 
 <template>
@@ -10,18 +7,10 @@ const tabs = [
     <div class="page-heading compact">
       <div>
         <p class="eyebrow">个人中心</p>
-        <h1>我的工作台</h1>
-        <p>维护个人资料，并查看本人提交的班级日志。</p>
+        <h1>个人资料</h1>
+        <p>维护个人基本资料信息。</p>
       </div>
     </div>
-
-    <div class="profile-layout">
-      <aside class="profile-tabs">
-        <RouterLink v-for="tab in tabs" :key="tab.path" :to="tab.path">
-          {{ tab.label }}
-        </RouterLink>
-      </aside>
-      <RouterView />
-    </div>
+    <ProfileInfo />
   </section>
 </template>

@@ -10,6 +10,7 @@ const routes = [
     path: '/logs/create',
     name: 'LogCreate',
     component: () => import('@/views/LogCreateView.vue'),
+    meta: { allowedRoles: ['student'] },
   },
   {
     path: '/logs',
@@ -25,11 +26,13 @@ const routes = [
     path: '/approval',
     name: 'Approval',
     component: () => import('@/views/ApprovalView.vue'),
+    meta: { allowedRoles: ['teacher'] },
   },
   {
     path: '/data-files',
     name: 'DataFiles',
     component: () => import('@/views/DataFilesView.vue'),
+    meta: { allowedRoles: ['admin'] },
   },
   {
     path: '/notifications',
@@ -38,27 +41,22 @@ const routes = [
   },
   {
     path: '/profile',
+    name: 'Profile',
     component: () => import('@/views/ProfileView.vue'),
-    children: [
-      {
-        path: '',
-        redirect: '/profile/info',
-      },
-      {
-        path: 'info',
-        name: 'ProfileInfo',
-        component: () => import('@/views/ProfileInfo.vue'),
-      },
-      {
-        path: 'my-logs',
-        name: 'ProfileLogs',
-        component: () => import('@/views/ProfileLogs.vue'),
-      },
-    ],
   },
 ]
 
-export default createRouter({
+const router = createRouter({
   history: createWebHistory(),
   routes,
 })
+
+// 角色守卫
+router.beforeEach((to) => {
+  const role = localStorage.getItem('class_log_role') || 'student'
+  if (to.meta.allowedRoles && !to.meta.allowedRoles.includes(role)) {
+    return { name: 'Home' }
+  }
+})
+
+export default router

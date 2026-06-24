@@ -1,4 +1,4 @@
-import { initialLogs, initialUser } from './mockData'
+import { initialLogs, initialNotifications, initialUser, roleUsers } from './mockData'
 
 const DATA_FILES = {
   logs: '/data/logs.json',
@@ -30,8 +30,10 @@ async function loadFromFile(path, fallback) {
 // 初始化：从文件加载到内存
 export async function initStorage() {
   logsCache = await loadFromFile(DATA_FILES.logs, initialLogs)
-  userCache = await loadFromFile(DATA_FILES.users, initialUser)
-  notificationsCache = await loadFromFile(DATA_FILES.notifications, [])
+  // 根据当前角色加载对应用户
+  const roleUser = roleUsers[roleCache]
+  userCache = roleUser ? { ...roleUser } : await loadFromFile(DATA_FILES.users, initialUser)
+  notificationsCache = await loadFromFile(DATA_FILES.notifications, initialNotifications)
 }
 
 // 日志相关操作
@@ -74,7 +76,7 @@ export function getUser() {
 }
 
 export function saveUser(user) {
-  userCache = { ...userCache, ...user }
+  userCache = { ...user }
 }
 
 // 通知相关操作
@@ -118,13 +120,18 @@ export function getRole() {
 export function setRole(role) {
   roleCache = role
   localStorage.setItem('class_log_role', role)
+  // 切换角色时同步切换用户
+  const roleUser = roleUsers[role]
+  if (roleUser) {
+    userCache = { ...roleUser }
+  }
 }
 
 // 数据重置
 export function resetDemoData() {
   saveLogs(initialLogs)
   saveUser(initialUser)
-  notificationsCache = []
+  notificationsCache = [...initialNotifications]
 }
 
 // 构建导出数据对象（无副作用）
@@ -185,13 +192,4 @@ export const statusMap = {
   approved: { text: '已通过', className: 'green' },
   rejected: { text: '已退回', className: 'red' },
   withdrawn: { text: '已撤回', className: 'gray' },
-}
-
-// 向后兼容：保留旧的 initLogs 和 initUser 函数
-export function initLogs() {
-  // 不再需要，由 initStorage 统一处理
-}
-
-export function initUser() {
-  // 不再需要，由 initStorage 统一处理
 }

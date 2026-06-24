@@ -6,6 +6,7 @@ import { addLog, formatDateTime } from '@/data/storage'
 
 const router = useRouter()
 const currentUser = inject('currentUser')
+const showToast = inject('showToast')
 const errors = ref([])
 const fieldErrors = ref({})
 
@@ -142,7 +143,7 @@ function submitLog(status = 'pending') {
   }
 
   addLog(log)
-  window.alert(status === 'draft' ? '草稿保存成功' : '日志已提交审批')
+  showToast(status === 'draft' ? '草稿保存成功' : '日志已提交审批', 'success')
   router.push('/logs')
 }
 </script>
