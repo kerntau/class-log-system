@@ -2,9 +2,10 @@
 import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
+  AlertCircle,
   ClipboardCheck,
   Database,
-  FilePlus2,
+  FileText,
   FolderClock,
   PenLine,
   SearchCheck,
@@ -29,26 +30,26 @@ const roleMeta = computed(() => {
   const meta = {
     student: {
       label: '学生工作台',
-      title: '今日需要完成的班级日志',
-      intro: '负责按课程如实填报班级日志，提交后等待辅导员审批；个人资料可在个人中心修改。',
+      title: '班级日志填报与管理',
+      intro: '按课程如实填报班级日志，提交后等待辅导员审批。可随时查看草稿和审批进度。',
       icon: PenLine,
-      primaryText: '新增日志',
+      primaryText: '填报日志',
       primaryPath: '/logs/create',
     },
     teacher: {
       label: '辅导员工作台',
-      title: '待审批日志集中处理',
-      intro: '查看本班学生提交记录，完成通过或退回，并保留审批意见和流转时间。',
+      title: '日志审批与班级管理',
+      intro: '审核本班学生提交的日志记录，通过或退回并保留审批意见。及时跟踪班级动态。',
       icon: UserCheck,
       primaryText: '处理审批',
       primaryPath: '/approval',
     },
     admin: {
       label: '管理员工作台',
-      title: '全量数据与文件归档',
-      intro: '维护系统数据文件，查看全量日志，必要时导入导出 JSON 数据完成备份。',
+      title: '系统数据管理与归档',
+      intro: '维护全校日志数据，支持导入导出备份。查看全量统计和异常记录处理。',
       icon: Database,
-      primaryText: '数据文件',
+      primaryText: '数据管理',
       primaryPath: '/data-files',
     },
   }
@@ -60,30 +61,44 @@ const visibleLogs = computed(() => {
   if (currentRole.value === 'student') {
     return logs.value.filter((log) => log.studentNo === currentUser.value.studentNo)
   }
+  if (currentRole.value === 'teacher') {
+    // 辅导员只能看本班级的日志
+    return logs.value.filter((log) => log.className === currentUser.value.className)
+  }
   return logs.value
 })
 
+const draftLogs = computed(() => visibleLogs.value.filter((log) => log.status === 'draft'))
 const pendingLogs = computed(() => visibleLogs.value.filter((log) => log.status === 'pending'))
 const rejectedLogs = computed(() => visibleLogs.value.filter((log) => log.status === 'rejected'))
 const approvedLogs = computed(() => visibleLogs.value.filter((log) => log.status === 'approved'))
 const recentLogs = computed(() => visibleLogs.value.slice(0, 4))
 
-const stats = computed(() => [
-  { title: '日志总数', value: visibleLogs.value.length, tone: 'blue', target: '/logs' },
-  {
-    title: currentRole.value === 'student' ? '等待审批' : '审批待办',
-    value: pendingLogs.value.length,
-    tone: 'orange',
-    target: currentRole.value === 'student' ? '/logs' : '/approval',
-  },
-  { title: '已通过', value: approvedLogs.value.length, tone: 'green', target: '/logs' },
-  { title: '需修正', value: rejectedLogs.value.length, tone: 'red', target: '/logs' },
-])
+const stats = computed(() => {
+  const baseStats = [
+    { title: '日志总数', value: visibleLogs.value.length, tone: 'blue', target: '/logs' },
+    {
+      title: currentRole.value === 'student' ? '等待审批' : '审批待办',
+      value: pendingLogs.value.length,
+      tone: 'orange',
+      target: currentRole.value === 'student' ? '/logs' : '/approval',
+    },
+    { title: '已通过', value: approvedLogs.value.length, tone: 'green', target: '/logs' },
+    { title: '需修正', value: rejectedLogs.value.length, tone: 'red', target: '/logs' },
+  ]
+
+  // 学生端显示草稿数
+  if (currentRole.value === 'student') {
+    baseStats[0] = { title: '草稿箱', value: draftLogs.value.length, tone: 'gray', target: '/logs' }
+  }
+
+  return baseStats
+})
 
 const relationSteps = [
-  { title: '学生', desc: '填写日志、保存草稿、提交审批、修改个人资料' },
-  { title: '辅导员', desc: '查看提交记录、审批通过、退回修改、跟踪班级情况' },
-  { title: '管理员', desc: '查看全量数据、维护文件、导入导出、删除异常记录' },
+  { title: '学生', desc: '填写日志、保存草稿、提交审批、查看进度' },
+  { title: '辅导员', desc: '审核日志、通过或退回、跟踪班级情况' },
+  { title: '管理员', desc: '维护数据、导入导出、查看全局统计' },
 ]
 </script>
 
@@ -116,6 +131,27 @@ const relationSteps = [
           <PenLine :size="16" aria-hidden="true" />
           修改资料
         </button>
+      </div>
+    </div>
+
+    <!-- 学生端：草稿和退回提醒 -->
+    <div v-if="currentRole === 'student' && (draftLogs.length > 0 || rejectedLogs.length > 0)" class="notice-grid">
+      <div v-if="draftLogs.length > 0" class="notice-card draft-notice">
+        <FileText :size="20" aria-hidden="true" />
+        <div>
+          <strong>{{ draftLogs.length }} 条草稿待完成</strong>
+          <p>您有未提交的日志草稿，请及时完善并提交审批。</p>
+        </div>
+        <button class="secondary-button" type="button" @click="router.push('/logs')">查看草稿</button>
+      </div>
+
+      <div v-if="rejectedLogs.length > 0" class="notice-card reject-notice">
+        <AlertCircle :size="20" aria-hidden="true" />
+        <div>
+          <strong>{{ rejectedLogs.length }} 条日志被退回</strong>
+          <p>辅导员已退回部分日志，请根据意见修改后重新提交。</p>
+        </div>
+        <button class="danger-button" type="button" @click="router.push('/logs')">立即处理</button>
       </div>
     </div>
 
@@ -153,8 +189,8 @@ const relationSteps = [
           <EmptyState
             v-if="recentLogs.length === 0"
             text="暂无日志记录"
-            action-text="新增日志"
-            @action="router.push('/logs/create')"
+            :action-text="currentRole === 'student' ? '填报日志' : '查看全部'"
+            @action="router.push(currentRole === 'student' ? '/logs/create' : '/logs')"
           />
         </div>
       </section>
@@ -162,8 +198,8 @@ const relationSteps = [
       <section class="panel relation-panel">
         <header class="panel-header">
           <div>
-            <p class="eyebrow">角色关系</p>
-            <h2>单一系统权限链路</h2>
+            <p class="eyebrow">角色说明</p>
+            <h2>系统权限链路</h2>
           </div>
           <ShieldCheck :size="22" aria-hidden="true" />
         </header>
@@ -176,14 +212,73 @@ const relationSteps = [
             </div>
           </li>
         </ol>
-        <div v-if="currentRole !== 'student'" class="queue-card">
+        <div v-if="currentRole === 'teacher' && pendingLogs.length > 0" class="queue-card">
           <ClipboardCheck :size="20" aria-hidden="true" />
           <div>
             <strong>{{ pendingLogs.length }} 条待审批</strong>
-            <p>优先处理待办，审批结果将写入日志时间线。</p>
+            <p>优先处理待办，审批结果将写入日志时间线并通知学生。</p>
+          </div>
+        </div>
+        <div v-if="currentRole === 'admin'" class="queue-card admin-tip">
+          <Database :size="20" aria-hidden="true" />
+          <div>
+            <strong>数据备份提醒</strong>
+            <p>建议定期导出数据文件进行备份，确保数据安全。</p>
           </div>
         </div>
       </section>
     </div>
   </section>
 </template>
+
+<style scoped>
+.notice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.notice-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  border-radius: var(--radius);
+  border: 1px solid;
+}
+
+.draft-notice {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.reject-notice {
+  background: #fef2f2;
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #991b1b;
+}
+
+.admin-tip {
+  background: #eff6ff;
+  border-color: rgba(37, 99, 235, 0.2);
+  color: #1e40af;
+}
+
+.notice-card strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.notice-card p {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notice-card button {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+</style>

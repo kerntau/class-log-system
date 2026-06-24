@@ -10,7 +10,7 @@ defineProps({
 
 const navItems = [
   { label: '工作台', path: '/', icon: Home },
-  { label: '日志填报', path: '/logs/create', icon: FilePenLine },
+  { label: '填报日志', path: '/logs/create', icon: FilePenLine, studentOnly: true },
   { label: '日志记录', path: '/logs', icon: FolderClock },
   { label: '审批管理', path: '/approval', icon: ClipboardCheck, teacherOnly: true },
   { label: '数据文件', path: '/data-files', icon: Database, adminOnly: true },
@@ -23,7 +23,11 @@ const navItems = [
     <nav>
       <RouterLink
         v-for="item in navItems"
-        v-show="(!item.teacherOnly || role !== 'student') && (!item.adminOnly || role === 'admin')"
+        v-show="
+          (!item.studentOnly || role === 'student') &&
+          (!item.teacherOnly || role !== 'student') &&
+          (!item.adminOnly || role === 'admin')
+        "
         :key="item.path"
         :to="item.path"
         class="sidebar-link"
@@ -35,7 +39,7 @@ const navItems = [
 
     <div class="sidebar-note">
       <ShieldCheck :size="18" aria-hidden="true" />
-      <span>数据以本机 JSON 形式保存，可由管理员导入导出。</span>
+      <span>数据存储于本地文件系统，可由管理员导入导出备份。</span>
     </div>
   </aside>
 </template>

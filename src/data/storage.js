@@ -1,66 +1,46 @@
 import { initialLogs, initialUser } from './mockData'
 
-const KEY_LOGS = 'class_log_data'
-const KEY_ROLE = 'class_log_role'
-const KEY_USER = 'class_log_user'
-const KEY_VERSION = 'class_log_schema_version'
-const STORAGE_VERSION = '2026-06-24-redesign'
-
-export function getLogs() {
-  const raw = localStorage.getItem(KEY_LOGS)
-  if (!raw) return []
-
-  try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch (error) {
-    console.error('日志数据解析失败', error)
-    return []
-  }
+const DATA_FILES = {
+  logs: '/data/logs.json',
+  users: '/data/users.json',
+  notifications: '/data/notifications.json',
 }
 
-function readJson(key, fallback) {
-  const raw = localStorage.getItem(key)
-  if (!raw) return fallback
+// 内存缓存
+let logsCache = null
+let userCache = null
+let notificationsCache = null
+let roleCache = localStorage.getItem('class_log_role') || 'student'
 
+// 从文件加载数据
+async function loadFromFile(path, fallback) {
   try {
-    return JSON.parse(raw)
+    const response = await fetch(path)
+    if (!response.ok) {
+      console.warn(`无法加载 ${path}，使用默认数据`)
+      return fallback
+    }
+    return await response.json()
   } catch (error) {
-    console.error('本机数据解析失败', error)
+    console.error(`读取文件 ${path} 失败`, error)
     return fallback
   }
 }
 
+// 初始化：从文件加载到内存
+export async function initStorage() {
+  logsCache = await loadFromFile(DATA_FILES.logs, initialLogs)
+  userCache = await loadFromFile(DATA_FILES.users, initialUser)
+  notificationsCache = await loadFromFile(DATA_FILES.notifications, [])
+}
+
+// 日志相关操作
+export function getLogs() {
+  return logsCache || []
+}
+
 export function saveLogs(logs) {
-  localStorage.setItem(KEY_LOGS, JSON.stringify(logs))
-}
-
-export function initLogs() {
-  if (localStorage.getItem(KEY_VERSION) !== STORAGE_VERSION) {
-    saveLogs(initialLogs)
-    localStorage.setItem(KEY_ROLE, 'student')
-    localStorage.setItem(KEY_VERSION, STORAGE_VERSION)
-    return
-  }
-
-  if (getLogs().length === 0) {
-    saveLogs(initialLogs)
-  }
-}
-
-export function initUser() {
-  const existingUser = readJson(KEY_USER, null)
-  if (!existingUser || existingUser.studentNo === '2024030420') {
-    localStorage.setItem(KEY_USER, JSON.stringify(initialUser))
-  }
-}
-
-export function getUser() {
-  return { ...initialUser, ...readJson(KEY_USER, {}) }
-}
-
-export function saveUser(user) {
-  localStorage.setItem(KEY_USER, JSON.stringify({ ...getUser(), ...user }))
+  logsCache = logs
 }
 
 export function addLog(log) {
@@ -88,28 +68,87 @@ export function deleteLog(id) {
   saveLogs(logs)
 }
 
+// 用户相关操作
+export function getUser() {
+  return { ...userCache }
+}
+
+export function saveUser(user) {
+  userCache = { ...userCache, ...user }
+}
+
+// 通知相关操作
+export function getNotifications() {
+  return notificationsCache || []
+}
+
+export function addNotification(notification) {
+  const notifications = getNotifications()
+  notifications.unshift({
+    id: Date.now(),
+    read: false,
+    createdAt: formatDateTime(),
+    ...notification,
+  })
+  notificationsCache = notifications
+}
+
+export function markNotificationAsRead(id) {
+  const notifications = getNotifications()
+  const notification = notifications.find((n) => n.id === id)
+  if (notification) {
+    notification.read = true
+    notificationsCache = [...notifications]
+  }
+}
+
+export function markAllNotificationsAsRead() {
+  notificationsCache = getNotifications().map((n) => ({ ...n, read: true }))
+}
+
+export function deleteNotification(id) {
+  notificationsCache = getNotifications().filter((n) => n.id !== id)
+}
+
+// 角色相关操作
 export function getRole() {
-  return localStorage.getItem(KEY_ROLE) || 'student'
+  return roleCache
 }
 
 export function setRole(role) {
-  localStorage.setItem(KEY_ROLE, role)
+  roleCache = role
+  localStorage.setItem('class_log_role', role)
 }
 
+// 数据重置
 export function resetDemoData() {
   saveLogs(initialLogs)
   saveUser(initialUser)
+  notificationsCache = []
 }
 
+// 导出数据（下载为 JSON 文件）
 export function exportFileData() {
-  return {
+  const data = {
     version: 1,
     exportedAt: formatDateTime(),
     user: getUser(),
     logs: getLogs(),
+    notifications: getNotifications(),
   }
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `班级日志数据_${formatDateTime().replace(/[:\s]/g, '_')}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+
+  return data
 }
 
+// 导入数据（从上传的文件）
 export function importFileData(data) {
   if (!data || typeof data !== 'object') {
     throw new Error('文件内容不是有效的数据对象')
@@ -122,8 +161,12 @@ export function importFileData(data) {
   if (data.user && typeof data.user === 'object') {
     saveUser(data.user)
   }
+  if (Array.isArray(data.notifications)) {
+    notificationsCache = data.notifications
+  }
 }
 
+// 工具函数
 export function formatDateTime(date = new Date()) {
   const pad = (value) => String(value).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
@@ -137,4 +180,13 @@ export const statusMap = {
   approved: { text: '已通过', className: 'green' },
   rejected: { text: '已退回', className: 'red' },
   withdrawn: { text: '已撤回', className: 'gray' },
+}
+
+// 向后兼容：保留旧的 initLogs 和 initUser 函数
+export function initLogs() {
+  // 不再需要，由 initStorage 统一处理
+}
+
+export function initUser() {
+  // 不再需要，由 initStorage 统一处理
 }
