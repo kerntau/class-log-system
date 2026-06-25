@@ -1,13 +1,14 @@
 <script setup>
-import { Eye, RotateCcw, Trash2 } from '@lucide/vue'
+import { Eye, Pencil, Send, Trash2 } from '@lucide/vue'
 import StatusTag from './StatusTag.vue'
 
+// 日志列表项只负责展示和抛出动作，权限判断由调用方传入。
 defineProps({
   log: {
     type: Object,
     required: true,
   },
-  canWithdraw: {
+  canEdit: {
     type: Boolean,
     default: false,
   },
@@ -15,9 +16,13 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  canSubmitDraft: {
+    type: Boolean,
+    default: false,
+  },
 })
 
-defineEmits(['view', 'withdraw', 'delete'])
+defineEmits(['view', 'edit', 'delete', 'submit-draft'])
 </script>
 
 <template>
@@ -41,13 +46,22 @@ defineEmits(['view', 'withdraw', 'delete'])
         详情
       </button>
       <button
-        v-show="canWithdraw && log.status === 'pending'"
-        class="ghost-button warn"
+        v-if="canEdit && (log.status === 'rejected' || log.status === 'withdrawn')"
+        class="ghost-button primary"
         type="button"
-        @click="$emit('withdraw', log.id)"
+        @click="$emit('edit', log.id)"
       >
-        <RotateCcw :size="16" aria-hidden="true" />
-        撤回
+        <Pencil :size="16" aria-hidden="true" />
+        修改
+      </button>
+      <button
+        v-if="canSubmitDraft && log.status === 'draft'"
+        class="ghost-button primary"
+        type="button"
+        @click="$emit('submit-draft', log.id)"
+      >
+        <Send :size="16" aria-hidden="true" />
+        提交
       </button>
       <button
         v-if="canDelete"

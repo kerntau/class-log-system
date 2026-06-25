@@ -1,15 +1,21 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Printer } from '@lucide/vue'
 import EmptyState from '@/components/EmptyState.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import Timeline from '@/components/Timeline.vue'
+import { canAccessLog } from '@/data/access'
 import { getLogById } from '@/data/storage'
 
 const route = useRoute()
 const router = useRouter()
-const log = ref(getLogById(route.params.id))
+const currentRole = inject('currentRole')
+const currentUser = inject('currentUser')
+const rawLog = ref(getLogById(route.params.id))
+const log = computed(() =>
+  canAccessLog(currentRole.value, currentUser.value, rawLog.value) ? rawLog.value : null,
+)
 
 function handlePrint() {
   window.print()

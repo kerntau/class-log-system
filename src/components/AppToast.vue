@@ -1,7 +1,8 @@
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref } from 'vue'
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from '@lucide/vue'
 
+// 全局轻提示队列，由 App.vue 通过 expose 调用。
 const toasts = ref([])
 let toastId = 0
 

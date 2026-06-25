@@ -6,6 +6,7 @@ const visible = ref(false)
 const message = ref('')
 let resolvePromise = null
 
+// 将确认弹窗包装成 Promise，调用方可以用 await 写线性流程。
 function show(msg) {
   message.value = msg
   visible.value = true

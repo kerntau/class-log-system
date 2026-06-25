@@ -287,9 +287,18 @@ h3 {
 
 .page {
   display: grid;
+  width: 100%;
   gap: 16px;
   max-width: 1280px;
   margin: 0 auto;
+}
+
+.module-layout {
+  display: grid;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  gap: 16px;
 }
 
 @keyframes fadeIn {
@@ -525,7 +534,7 @@ h3 {
   min-height: 36px;
   padding: 0 16px;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   font-weight: 600;
   font-size: 13px;
   white-space: nowrap;
@@ -547,13 +556,12 @@ h3 {
 
 .secondary-button {
   color: var(--primary);
-  border-color: rgba(37, 99, 235, 0.2);
-  background: rgba(37, 99, 235, 0.05);
+  border-color: transparent;
+  background: rgba(37, 99, 235, 0.06);
 }
 
 .secondary-button:hover {
-  background: rgba(37, 99, 235, 0.1);
-  border-color: var(--primary);
+  background: rgba(37, 99, 235, 0.12);
 }
 
 .ghost-button {
@@ -599,7 +607,7 @@ h3 {
   color: var(--muted);
   border-color: var(--border);
   background: var(--surface);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
 }
 
 .icon-button:hover {
@@ -669,6 +677,9 @@ h3 {
 
 /* 表单 - 紧凑 */
 .form-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   padding: 20px;
 }
 
@@ -715,7 +726,7 @@ textarea {
   width: 100%;
   min-height: 38px;
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   background: #fff;
   color: var(--text);
   padding: 8px 12px;
@@ -793,6 +804,17 @@ input[readonly] {
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
+}
+
+/* 表单操作按钮与 fieldset 内容右对齐 */
+.form-actions {
+  padding-right: 17px;
+}
+
+.form-actions .primary-button,
+.form-actions .secondary-button,
+.form-actions .ghost-button {
+  min-width: 120px;
 }
 
 /* 日志列表 - 表格行样式 */
@@ -1375,11 +1397,6 @@ input[readonly] {
   animation: toastOut 0.2s ease-in forwards;
 }
 
-.toast-success { border-left: 4px solid var(--green); }
-.toast-error { border-left: 4px solid var(--red); }
-.toast-warning { border-left: 4px solid var(--orange); }
-.toast-info { border-left: 4px solid var(--primary); }
-
 .toast-success svg { color: var(--green); }
 .toast-error svg { color: var(--red); }
 .toast-warning svg { color: var(--orange); }
@@ -1671,6 +1688,7 @@ input[readonly] {
   .file-actions,
   .profile-save-row {
     justify-content: stretch;
+    padding-right: 0;
   }
 }
 

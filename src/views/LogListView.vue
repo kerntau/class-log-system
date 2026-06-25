@@ -4,31 +4,28 @@ import { useRouter } from 'vue-router'
 import { FilePlus2, Search } from '@lucide/vue'
 import EmptyState from '@/components/EmptyState.vue'
 import LogRecordItem from '@/components/LogRecordItem.vue'
+import { getAccessibleLogs } from '@/data/access'
 import { statusOptions } from '@/data/mockData'
-import { deleteLog, formatDateTime, getLogById, getLogs, updateLog } from '@/data/storage'
+import { addNotification, deleteLog, formatDateTime, getLogById, getLogs, logsVersion, updateLog } from '@/data/storage'
 
 const router = useRouter()
 const currentRole = inject('currentRole')
 const currentUser = inject('currentUser')
 const showConfirm = inject('showConfirm')
+const showToast = inject('showToast')
 const logs = ref(getLogs())
 const statusFilter = ref('all')
 const searchKeyword = ref('')
 
-watch(currentRole, refreshLogs)
+watch([currentRole, logsVersion], refreshLogs, { immediate: true })
 
 function refreshLogs() {
   logs.value = getLogs()
 }
 
 const filteredLogs = computed(() => {
-  return logs.value.filter((log) => {
-    let roleMatched = true
-    if (currentRole.value === 'student') {
-      roleMatched = log.studentNo === currentUser.value.studentNo
-    } else if (currentRole.value === 'teacher') {
-      roleMatched = log.className === currentUser.value.className
-    }
+  // 先按角色权限取数，再叠加页面筛选条件。
+  return getAccessibleLogs(currentRole.value, currentUser.value, logs.value).filter((log) => {
     const statusMatched = statusFilter.value === 'all' ? true : log.status === statusFilter.value
     const keyword = searchKeyword.value.trim()
     const keywordMatched = keyword
@@ -36,23 +33,43 @@ const filteredLogs = computed(() => {
           .some((item) => String(item).includes(keyword))
       : true
 
-    return roleMatched && statusMatched && keywordMatched
+    return statusMatched && keywordMatched
   })
 })
 
-async function withdrawLog(id) {
+async function submitDraft(id) {
   const log = getLogById(id)
-  if (!log || log.status !== 'pending') return
-  const confirmed = await showConfirm('确认撤回这条待审批日志吗？')
+  if (!log || log.status !== 'draft') return
+  const confirmed = await showConfirm('确认提交这条草稿日志进行审批吗？')
   if (!confirmed) return
 
+  const now = formatDateTime()
+  const operatorName = currentUser.value.name
+  const counselorName = currentUser.value.counselor || '辅导员'
+
+  // 草稿提交后进入和新建提交一致的待审批流程。
   updateLog(id, {
-    status: 'withdrawn',
+    status: 'pending',
+    submitTime: now,
     timeline: [
       ...log.timeline,
-      { title: '学生撤回日志', time: formatDateTime() },
+      { title: '提交班级日志', time: now, operator: operatorName },
+      { title: '辅导员待审批', time: now, target: counselorName },
     ],
   })
+
+  // 通知辅导员处理新待办。
+  addNotification({
+    type: 'info',
+    title: '新日志待审批',
+    content: `${operatorName} 提交了「${log.courseName}」日志，请及时审批。`,
+    targetRole: 'teacher',
+    targetStudentNo: '',
+    targetClassName: log.className,
+    logId: id,
+  })
+
+  showToast('草稿已提交审批', 'success')
   refreshLogs()
 }
 
@@ -107,11 +124,17 @@ async function removeLog(id) {
           v-for="log in filteredLogs"
           :key="log.id"
           :log="log"
-          :can-withdraw="currentRole === 'student'"
+          :can-edit="
+            currentRole === 'student' &&
+            (log.studentNo === currentUser.studentNo) &&
+            (log.status === 'rejected' || log.status === 'withdrawn')
+          "
           :can-delete="currentRole === 'admin'"
+          :can-submit-draft="currentRole === 'student' && log.studentNo === currentUser.studentNo"
           @view="router.push(`/logs/detail/${$event}`)"
-          @withdraw="withdrawLog"
+          @edit="router.push(`/logs/create?editId=${$event}`)"
           @delete="removeLog"
+          @submit-draft="submitDraft"
         />
         <EmptyState
           v-if="filteredLogs.length === 0"

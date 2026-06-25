@@ -10,19 +10,20 @@ const showToast = inject('showToast')
 const saved = ref(false)
 
 const roleText = {
-  student: '学生',
+  student: '班委',
   teacher: '辅导员',
   admin: '管理员',
 }
 
 const form = reactive({ ...currentUser.value })
 
-// 角色切换时同步重置表单
+// 角色切换时同步重置表单，先清空可避免残留旧角色字段。
 watch(currentUser, (newUser) => {
+  Object.keys(form).forEach((key) => delete form[key])
   Object.assign(form, { ...newUser })
 })
 
-// 根据角色保留对应字段，清除其他角色的专属字段
+// 保存前只保留当前角色字段，防止学生/教师/管理员字段互相串入。
 const roleFieldMap = {
   student: ['name', 'studentNo', 'className', 'department', 'phone', 'counselor'],
   teacher: ['name', 'employeeNo', 'className', 'department', 'phone', 'title'],
@@ -30,7 +31,7 @@ const roleFieldMap = {
 }
 
 function submitProfile() {
-  // 学生角色修改资料时同步更新关联日志
+  // 学生修改学号、姓名、班级时，同步更新该学生已有日志的展示信息。
   if (currentRole.value === 'student' && currentUser.value.studentNo) {
     const previousStudentNo = currentUser.value.studentNo
     const updatedLogs = getLogs().map((log) => {
@@ -45,7 +46,6 @@ function submitProfile() {
     saveLogs(updatedLogs)
   }
 
-  // 根据当前角色清理多余字段
   const allowedFields = roleFieldMap[currentRole.value] || ['name']
   const cleaned = {}
   for (const key of allowedFields) {
@@ -63,7 +63,16 @@ function submitProfile() {
 </script>
 
 <template>
-  <section class="panel">
+  <section class="page">
+    <div class="page-heading compact">
+      <div>
+        <p class="eyebrow">个人中心</p>
+        <h1>个人资料</h1>
+        <p>维护个人基本资料信息。</p>
+      </div>
+    </div>
+
+    <section class="panel">
     <header class="panel-header">
       <div>
         <p class="eyebrow">个人资料</p>
@@ -157,5 +166,6 @@ function submitProfile() {
         </button>
       </div>
     </form>
+  </section>
   </section>
 </template>

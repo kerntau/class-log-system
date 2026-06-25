@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 
-// https://vite.dev/config/
+// Vite 配置：启用 Vue 插件，并把 @ 指向 src。
 export default defineConfig({
   plugins: [vue()],
   resolve: {

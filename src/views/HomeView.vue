@@ -13,21 +13,24 @@ import {
 import EmptyState from '@/components/EmptyState.vue'
 import LogRecordItem from '@/components/LogRecordItem.vue'
 import StatCard from '@/components/StatCard.vue'
-import { getLogs } from '@/data/storage'
+import { getAccessibleLogs } from '@/data/access'
+import { getLogs, logsVersion } from '@/data/storage'
 
 const router = useRouter()
 const currentRole = inject('currentRole')
 const currentUser = inject('currentUser')
 const logs = ref(getLogs())
 
-watch(currentRole, () => {
+// 工作台展示跟随角色和日志版本实时刷新。
+watch([currentRole, logsVersion], () => {
   logs.value = getLogs()
-})
+}, { immediate: true })
 
+// 不同角色共享同一套页面，但入口文案和主操作不同。
 const roleMeta = computed(() => {
   const meta = {
     student: {
-      label: '学生工作台',
+      label: '班委工作台',
       title: '班级日志填报与管理',
       intro: '按课程如实填报班级日志，提交后等待辅导员审批。可随时查看草稿和审批进度。',
       icon: FileText,
@@ -56,23 +59,31 @@ const roleMeta = computed(() => {
 })
 
 const visibleLogs = computed(() => {
-  if (currentRole.value === 'student') {
-    return logs.value.filter((log) => log.studentNo === currentUser.value.studentNo)
-  }
-  if (currentRole.value === 'teacher') {
-    // 辅导员只能看本班级的日志
-    return logs.value.filter((log) => log.className === currentUser.value.className)
-  }
-  return logs.value
+  return getAccessibleLogs(currentRole.value, currentUser.value, logs.value)
 })
 
 const draftLogs = computed(() => visibleLogs.value.filter((log) => log.status === 'draft'))
 const pendingLogs = computed(() => visibleLogs.value.filter((log) => log.status === 'pending'))
 const rejectedLogs = computed(() => visibleLogs.value.filter((log) => log.status === 'rejected'))
+const withdrawnLogs = computed(() => visibleLogs.value.filter((log) => log.status === 'withdrawn'))
 const approvedLogs = computed(() => visibleLogs.value.filter((log) => log.status === 'approved'))
 const recentLogs = computed(() => visibleLogs.value.slice(0, 4))
 
+// 需要处理的日志（被退回 + 已撤回）
+const needActionLogs = computed(() => [...rejectedLogs.value, ...withdrawnLogs.value])
+
 const stats = computed(() => {
+  // 管理员查看全量状态统计，普通角色只展示和办事相关的摘要。
+  if (currentRole.value === 'admin') {
+    return [
+      { title: '草稿', value: draftLogs.value.length, tone: 'gray', target: '/data-files/logs' },
+      { title: '待审批', value: pendingLogs.value.length, tone: 'orange', target: '/data-files/logs' },
+      { title: '已通过', value: approvedLogs.value.length, tone: 'green', target: '/data-files/logs' },
+      { title: '已退回', value: rejectedLogs.value.length, tone: 'red', target: '/data-files/logs' },
+      { title: '已撤回', value: withdrawnLogs.value.length, tone: 'gray', target: '/data-files/logs' },
+    ]
+  }
+
   const baseStats = [
     { title: '日志总数', value: visibleLogs.value.length, tone: 'blue', target: '/logs' },
     {
@@ -82,7 +93,7 @@ const stats = computed(() => {
       target: currentRole.value === 'student' ? '/logs' : '/approval',
     },
     { title: '已通过', value: approvedLogs.value.length, tone: 'green', target: '/logs' },
-    { title: '需修正', value: rejectedLogs.value.length, tone: 'red', target: '/logs' },
+    { title: '需修正', value: needActionLogs.value.length, tone: 'red', target: '/logs' },
   ]
 
   // 学生端显示草稿数
@@ -94,7 +105,7 @@ const stats = computed(() => {
 })
 
 const relationSteps = [
-  { title: '学生', desc: '填写日志、保存草稿、提交审批、查看进度' },
+  { title: '班委', desc: '填写日志、保存草稿、提交审批、查看进度' },
   { title: '辅导员', desc: '审核日志、通过或退回、跟踪班级情况' },
   { title: '管理员', desc: '维护数据、导入导出、查看全局统计' },
 ]
@@ -126,8 +137,8 @@ const relationSteps = [
       </div>
     </div>
 
-    <!-- 学生端：草稿和退回提醒 -->
-    <div v-if="currentRole === 'student' && (draftLogs.length > 0 || rejectedLogs.length > 0)" class="notice-grid">
+    <!-- 学生端：草稿和退回/撤回提醒 -->
+    <div v-if="currentRole === 'student' && (draftLogs.length > 0 || needActionLogs.length > 0)" class="notice-grid">
       <div v-if="draftLogs.length > 0" class="notice-card draft-notice">
         <FileText :size="20" aria-hidden="true" />
         <div>
@@ -137,13 +148,18 @@ const relationSteps = [
         <button class="secondary-button" type="button" @click="router.push('/logs')">查看草稿</button>
       </div>
 
-      <div v-if="rejectedLogs.length > 0" class="notice-card reject-notice">
+      <div v-if="needActionLogs.length > 0" class="notice-card reject-notice">
         <AlertCircle :size="20" aria-hidden="true" />
-        <div>
-          <strong>{{ rejectedLogs.length }} 条日志被退回</strong>
-          <p>辅导员已退回部分日志，请根据意见修改后重新提交。</p>
+        <div class="notice-action-list">
+          <strong>{{ needActionLogs.length }} 条日志需处理</strong>
+          <p>{{ rejectedLogs.length > 0 ? '辅导员已退回' + rejectedLogs.length + '条，' : '' }}{{ withdrawnLogs.length > 0 ? '已撤回' + withdrawnLogs.length + '条，' : '' }}请修改后重新提交。</p>
+          <div class="action-items">
+            <div v-for="log in needActionLogs" :key="log.id" class="action-item">
+              <span>{{ log.courseName }} · {{ log.logDate }}</span>
+              <button class="danger-button small" type="button" @click="router.push(`/logs/create?editId=${log.id}`)">修改</button>
+            </div>
+          </div>
         </div>
-        <button class="danger-button" type="button" @click="router.push('/logs')">立即处理</button>
       </div>
     </div>
 
@@ -175,8 +191,9 @@ const relationSteps = [
             v-for="log in recentLogs"
             :key="log.id"
             :log="log"
-            :can-withdraw="currentRole === 'student'"
+            :can-edit="currentRole === 'student'"
             @view="router.push(`/logs/detail/${$event}`)"
+            @edit="router.push(`/logs/create?editId=${$event}`)"
           />
           <EmptyState
             v-if="recentLogs.length === 0"
@@ -208,7 +225,7 @@ const relationSteps = [
           <ClipboardCheck :size="20" aria-hidden="true" />
           <div>
             <strong>{{ pendingLogs.length }} 条待审批</strong>
-            <p>优先处理待办，审批结果将写入日志时间线并通知学生。</p>
+            <p>优先处理待办，审批结果将写入日志时间线并通知班委。</p>
           </div>
         </div>
         <div v-if="currentRole === 'admin'" class="queue-card admin-tip">
@@ -275,6 +292,40 @@ const relationSteps = [
   min-width: 0;
 }
 
+.notice-action-list {
+  flex: 1;
+}
+
+.action-items {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.06);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.action-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.button.small,
+.danger-button.small {
+  padding: 4px 12px;
+  font-size: 12px;
+}
+
 @media (max-width: 480px) {
   .notice-card {
     flex-direction: column;
@@ -283,6 +334,15 @@ const relationSteps = [
 
   .notice-card button {
     margin-left: 0;
+    width: 100%;
+  }
+
+  .action-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .action-item .danger-button.small {
     width: 100%;
   }
 }

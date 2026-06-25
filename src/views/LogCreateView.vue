@@ -1,14 +1,51 @@
 <script setup>
-import { inject, reactive, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { inject, reactive, ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { AlertCircle, RotateCcw, Save, Send } from '@lucide/vue'
-import { addLog, formatDateTime } from '@/data/storage'
+import { addLog, addNotification, formatDateTime, getLogById, updateLog } from '@/data/storage'
 
+const route = useRoute()
 const router = useRouter()
 const currentUser = inject('currentUser')
 const showToast = inject('showToast')
+const showConfirm = inject('showConfirm')
 const errors = ref([])
 const fieldErrors = ref({})
+
+// 编辑模式只允许处理被退回或已撤回的日志，避免修改已提交/已通过记录。
+const editId = ref(null)
+const editLog = ref(null)
+
+onMounted(() => {
+  const id = route.query.editId
+  if (id) {
+    const log = getLogById(id)
+    if (log && (log.status === 'rejected' || log.status === 'withdrawn')) {
+      editId.value = Number(id)
+      editLog.value = log
+      // 将被退回日志数据填入表单
+      Object.assign(form, {
+        studentName: log.studentName,
+        studentNo: log.studentNo,
+        className: log.className,
+        logDate: log.logDate,
+        week: log.week,
+        weekday: log.weekday,
+        courseName: log.courseName,
+        teacherName: log.teacherName,
+        section: log.section,
+        classroom: log.classroom,
+        attendanceCount: log.attendanceCount,
+        leaveCount: log.leaveCount,
+        lateInfo: log.lateInfo,
+        discipline: log.discipline,
+        deviceStatus: log.deviceStatus,
+        abnormalInfo: log.abnormalInfo,
+        remark: log.remark,
+      })
+    }
+  }
+})
 
 const initialForm = {
   studentName: currentUser.value.name,
@@ -32,7 +69,7 @@ const initialForm = {
 
 const form = reactive({ ...initialForm })
 
-// 计算当前是第几周
+// 周次按固定学期开始日期估算，用户仍可在表单中手动修正。
 const currentWeek = computed(() => {
   const startDate = new Date('2026-02-16') // 学期开始日期
   const today = new Date()
@@ -114,13 +151,55 @@ function validateForm() {
   return errors.value.length === 0
 }
 
-function submitLog(status = 'pending') {
+async function submitLog(status = 'pending') {
   if (status === 'pending' && !validateForm()) {
     window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
 
   const now = formatDateTime()
+  const operatorName = currentUser.value.name
+
+  // 修改重提交会清空旧审批结果，并把新节点追加到原时间线。
+  if (editId.value) {
+    const confirmed = await showConfirm('确认修改并重新提交这条日志吗？提交后将重新进入审批流程。')
+    if (!confirmed) return
+    const oldLog = editLog.value
+    const counselorName = currentUser.value.counselor || '辅导员'
+    updateLog(editId.value, {
+      ...form,
+      attendanceCount: Number(form.attendanceCount),
+      leaveCount: Number(form.leaveCount),
+      abnormalInfo: form.abnormalInfo.trim() || '无',
+      remark: form.remark.trim() || '',
+      status: 'pending',
+      submitTime: now,
+      approver: '',
+      approveOpinion: '',
+      approveTime: '',
+      timeline: [
+        ...oldLog.timeline,
+        { title: '班委修改并重新提交', time: now, operator: operatorName },
+        { title: '辅导员待审批', time: now, target: counselorName },
+      ],
+    })
+    // 通知辅导员有修改重提交。
+    addNotification({
+      type: 'info',
+      title: '日志修改重提交',
+      content: `${operatorName} 修改了「${form.courseName}」日志并重新提交，请及时审批。`,
+      targetRole: 'teacher',
+      targetStudentNo: '',
+      targetClassName: form.className,
+      logId: editId.value,
+    })
+    showToast('日志已修改并重新提交', 'success')
+    router.push('/logs')
+    return
+  }
+
+  // 新建日志时根据保存状态生成不同的初始时间线。
+  const counselorName = currentUser.value.counselor || '辅导员'
   const log = {
     id: Date.now(),
     ...form,
@@ -135,14 +214,28 @@ function submitLog(status = 'pending') {
     approveTime: '',
     timeline:
       status === 'draft'
-        ? [{ title: '保存草稿', time: now }]
+        ? [{ title: '保存草稿', time: now, operator: operatorName }]
         : [
-            { title: '提交班级日志', time: now },
-            { title: '辅导员待审批', time: now },
+            { title: '提交班级日志', time: now, operator: operatorName },
+            { title: '辅导员待审批', time: now, target: counselorName },
           ],
   }
 
   addLog(log)
+
+  // 保存草稿不通知，正式提交才创建辅导员待办通知。
+  if (status === 'pending') {
+    addNotification({
+      type: 'info',
+      title: '新日志待审批',
+      content: `${operatorName} 提交了「${form.courseName}」日志，请及时审批。`,
+      targetRole: 'teacher',
+      targetStudentNo: '',
+      targetClassName: form.className,
+      logId: log.id,
+    })
+  }
+
   showToast(status === 'draft' ? '草稿保存成功' : '日志已提交审批', 'success')
   router.push('/logs')
 }
@@ -152,13 +245,22 @@ function submitLog(status = 'pending') {
   <section class="page">
     <div class="page-heading compact">
       <div>
-        <p class="eyebrow">在线办理</p>
-        <h1>班级日志填报</h1>
-        <p>请按课程实际情况如实填写，提交后进入辅导员审批流程。</p>
+        <p class="eyebrow">{{ editId ? '修改重提交' : '在线办理' }}</p>
+        <h1>{{ editId ? '修改日志' : '班级日志填报' }}</h1>
+        <p>{{ editId ? '根据审批意见修改内容，重新提交后进入审批流程。' : '请按课程实际情况如实填写，提交后进入辅导员审批流程。' }}</p>
       </div>
     </div>
 
     <form class="form-panel" @submit.prevent="submitLog('pending')">
+      <!-- 编辑模式：显示退回意见 -->
+      <div v-if="editLog" class="reject-hint" role="alert">
+        <AlertCircle :size="18" aria-hidden="true" />
+        <div>
+          <strong>退回意见（{{ editLog.approver }}）</strong>
+          <p>{{ editLog.approveOpinion }}</p>
+        </div>
+      </div>
+
       <div v-if="errors.length" class="error-summary" role="alert">
         <AlertCircle :size="18" aria-hidden="true" />
         <div>
@@ -281,13 +383,13 @@ function submitLog(status = 'pending') {
           <RotateCcw :size="16" aria-hidden="true" />
           重置表单
         </button>
-        <button class="secondary-button" type="button" @click="submitLog('draft')">
+        <button v-if="!editId" class="secondary-button" type="button" @click="submitLog('draft')">
           <Save :size="16" aria-hidden="true" />
           保存草稿
         </button>
         <button class="primary-button" type="submit">
           <Send :size="16" aria-hidden="true" />
-          提交审批
+          {{ editId ? '重新提交' : '提交审批' }}
         </button>
       </div>
     </form>
@@ -295,6 +397,30 @@ function submitLog(status = 'pending') {
 </template>
 
 <style scoped>
+.reject-hint {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 20px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius);
+  color: #92400e;
+  background: #fffbeb;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.reject-hint strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.reject-hint p {
+  margin: 0;
+  line-height: 1.5;
+}
+
 .error-summary {
   display: flex;
   gap: 14px;

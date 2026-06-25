@@ -17,7 +17,7 @@ const emit = defineEmits(['approve', 'reject', 'close'])
 const showToast = inject('showToast')
 const opinion = ref('')
 
-// 快捷审批意见模板
+// 快捷审批意见模板减少辅导员重复输入。
 const approveTemplates = ['记录完整，情况属实。', '日志填报规范，予以通过。', '内容详实，审批通过。']
 const rejectTemplates = ['请补充课堂纪律的具体描述。', '设备情况说明不够详细，请完善。', '异常情况需要说明处理结果。']
 

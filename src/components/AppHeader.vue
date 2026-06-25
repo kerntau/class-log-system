@@ -3,7 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Bell, Building2, LayoutGrid, Database, ClipboardCheck, PenLine, FolderClock, Menu, X } from '@lucide/vue'
 import RoleSwitcher from './RoleSwitcher.vue'
-import { getNotifications } from '@/data/storage'
+import { getVisibleNotifications } from '@/data/access'
+import { getNotifications, notificationsVersion } from '@/data/storage'
 
 const props = defineProps({
   role: {
@@ -20,18 +21,14 @@ const emit = defineEmits(['role-change'])
 const router = useRouter()
 const mobileNavOpen = ref(false)
 
+// 读取通知版本号建立响应依赖，确保新增/已读后徽标自动刷新。
 const unreadCount = computed(() => {
+  notificationsVersion.value
   router.currentRoute.value.path
-  const notifications = getNotifications()
-  if (props.role === 'student') {
-    return notifications.filter(
-      (n) => !n.read && (!n.targetStudentNo || n.targetStudentNo === props.user.studentNo),
-    ).length
-  }
-  return notifications.filter((n) => !n.read).length
+  return getVisibleNotifications(props.role, props.user, getNotifications()).filter((n) => !n.read).length
 })
 
-// 路由切换时关闭移动端导航
+// 路由切换时关闭移动端导航。
 watch(() => router.currentRoute.value.path, () => {
   mobileNavOpen.value = false
 })

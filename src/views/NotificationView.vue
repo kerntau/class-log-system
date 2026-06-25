@@ -1,28 +1,30 @@
 <script setup>
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Bell, Check, CheckCheck, Trash2 } from '@lucide/vue'
 import EmptyState from '@/components/EmptyState.vue'
+import { getVisibleNotifications } from '@/data/access'
 import {
   deleteNotification,
   getNotifications,
-  markAllNotificationsAsRead,
+  markNotificationsAsRead,
   markNotificationAsRead,
+  notificationsVersion,
 } from '@/data/storage'
 
 const router = useRouter()
 const currentRole = inject('currentRole')
 const currentUser = inject('currentUser')
+const showConfirm = inject('showConfirm')
 const notifications = ref(getNotifications())
 
-// 学生只看发给自己的通知，辅导员和管理员看全部
+// 角色切换或通知版本变化时，重新计算当前用户可见的通知。
+watch([currentRole, notificationsVersion], () => {
+  notifications.value = [...getNotifications()]
+}, { immediate: true })
+
 const visibleNotifications = computed(() => {
-  if (currentRole.value === 'student') {
-    return notifications.value.filter(
-      (n) => !n.targetStudentNo || n.targetStudentNo === currentUser.value.studentNo,
-    )
-  }
-  return notifications.value
+  return getVisibleNotifications(currentRole.value, currentUser.value, notifications.value)
 })
 
 const unreadCount = computed(() => visibleNotifications.value.filter((n) => !n.read).length)
@@ -41,12 +43,16 @@ function handleRead(notification) {
   }
 }
 
-function handleMarkAll() {
-  markAllNotificationsAsRead()
+async function handleMarkAll() {
+  const confirmed = await showConfirm('确认将所有通知标记为已读吗？')
+  if (!confirmed) return
+  markNotificationsAsRead(visibleNotifications.value.map((notification) => notification.id))
   refresh()
 }
 
-function handleDelete(id) {
+async function handleDelete(id) {
+  const confirmed = await showConfirm('确认删除这条通知吗？删除后不可恢复。')
+  if (!confirmed) return
   deleteNotification(id)
   refresh()
 }

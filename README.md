@@ -34,29 +34,36 @@
 
 ```
 src/
-├── components/          # 通用组件
-│   ├── AppHeader.vue    # 顶部导航栏（含汉堡菜单）
-│   ├── AppToast.vue     # 全局提示
-│   ├── ApprovalDialog.vue # 审批弹窗
-│   ├── ConfirmDialog.vue  # 确认弹窗
-│   ├── EmptyState.vue   # 空状态占位
-│   ├── LogRecordItem.vue # 日志列表项
-│   ├── RoleSwitcher.vue # 角色切换器
-│   ├── StatusTag.vue    # 状态标签
-│   └── Timeline.vue     # 时间线组件
+├── components/          # 通用组件（导航、弹窗、状态、列表项、空状态等）
 ├── data/
+│   ├── access.js        # 角色权限与可见数据过滤
 │   ├── mockData.js      # 模拟数据（24条日志 + 12条通知）
 │   └── storage.js       # 数据存储层（内存缓存 + JSON 文件）
+├── layouts/
+│   ├── ApprovalLayout.vue  # 审批模块二级布局
+│   ├── DataFilesLayout.vue # 数据文件模块二级布局
+│   └── LogsLayout.vue      # 日志模块二级布局
 ├── router/
 │   └── index.js         # 路由配置 + 角色守卫
-├── views/               # 页面组件
+├── views/
+│   ├── ApprovalHistoryView.vue # 审批历史
+│   ├── ApprovalPendingView.vue # 待审批列表
+│   ├── DataLogsView.vue        # 日志数据统计
+│   ├── DataManageView.vue      # JSON 数据管理
+│   ├── HomeView.vue            # 工作台
+│   ├── LogCreateView.vue       # 日志填报
+│   ├── LogDetailView.vue       # 日志详情
+│   ├── LogListView.vue         # 记录库
+│   ├── NotificationView.vue    # 站内通知
+│   └── ProfileInfo.vue         # 个人资料
 ├── App.vue              # 根组件
 ├── main.js              # 入口
 └── style.css            # 全局样式
 public/
 ├── data/
 │   ├── logs.json        # 日志数据
-│   └── notifications.json # 通知数据
+│   ├── notifications.json # 通知数据
+│   └── users.json       # 当前用户资料
 └── logo.jpg             # 网站图标
 ```
 

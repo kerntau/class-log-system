@@ -5,6 +5,7 @@
     "title": "日志审批通过",
     "content": "您提交的「网络安全设备配置与管理」日志已审批通过：记录完整，情况属实。",
     "targetStudentNo": "2024240172",
+    "targetRole": "student",
     "logId": 1023,
     "read": false,
     "createdAt": "2026-06-23 15:20"
@@ -15,19 +16,10 @@
     "title": "日志被退回",
     "content": "您提交的「数据库应用基础」日志已退回：请补充设备问题具体影响和处理结果。",
     "targetStudentNo": "2024240172",
+    "targetRole": "student",
     "logId": 1022,
     "read": true,
     "createdAt": "2026-06-21 19:10"
-  },
-  {
-    "id": 10003,
-    "type": "success",
-    "title": "日志审批通过",
-    "content": "您提交的「数据结构与算法」日志已审批通过：日志填报规范，予以通过。",
-    "targetStudentNo": "2024240172",
-    "logId": 1020,
-    "read": true,
-    "createdAt": "2026-06-17 14:00"
   },
   {
     "id": 10004,
@@ -35,39 +27,10 @@
     "title": "日志审批通过",
     "content": "您提交的「JavaScript前端框架应用」日志已审批通过：记录详实，审批通过。",
     "targetStudentNo": "2024240185",
+    "targetRole": "student",
     "logId": 1017,
     "read": false,
     "createdAt": "2026-06-20 14:15"
-  },
-  {
-    "id": 10005,
-    "type": "success",
-    "title": "日志审批通过",
-    "content": "您提交的「操作系统原理」日志已审批通过：记录完整，情况属实。",
-    "targetStudentNo": "2024240185",
-    "logId": 1016,
-    "read": true,
-    "createdAt": "2026-06-16 15:30"
-  },
-  {
-    "id": 10006,
-    "type": "success",
-    "title": "日志审批通过",
-    "content": "您提交的「Web前端基础」日志已审批通过：填报内容完整，审批通过。",
-    "targetStudentNo": "2024240185",
-    "logId": 1014,
-    "read": true,
-    "createdAt": "2026-06-06 09:20"
-  },
-  {
-    "id": 10007,
-    "type": "success",
-    "title": "日志审批通过",
-    "content": "您提交的「Web前端基础」日志已审批通过：内容详实，审批通过。",
-    "targetStudentNo": "2024240023",
-    "logId": 1011,
-    "read": true,
-    "createdAt": "2026-06-18 17:00"
   },
   {
     "id": 10008,
@@ -75,9 +38,65 @@
     "title": "日志被退回",
     "content": "您提交的「软件测试技术」日志已退回：后排纪律问题请具体说明涉及学生和座位号。",
     "targetStudentNo": "2024240023",
+    "targetRole": "student",
     "logId": 1009,
     "read": false,
     "createdAt": "2026-06-04 14:20"
+  },
+  {
+    "id": 10015,
+    "type": "info",
+    "title": "新日志待审批",
+    "content": "张敬茁提交了「JavaScript前端框架应用」日志，请及时审批。",
+    "targetStudentNo": "",
+    "targetRole": "teacher",
+    "logId": 1024,
+    "read": false,
+    "createdAt": "2026-06-24 10:15"
+  },
+  {
+    "id": 10016,
+    "type": "info",
+    "title": "新日志待审批",
+    "content": "刘思琪提交了「软件测试技术」日志，请及时审批。",
+    "targetStudentNo": "",
+    "targetRole": "teacher",
+    "logId": 1018,
+    "read": false,
+    "createdAt": "2026-06-24 14:20"
+  },
+  {
+    "id": 10018,
+    "type": "info",
+    "title": "日志被撤回",
+    "content": "刘思琪撤回了「数据库应用基础」日志。",
+    "targetStudentNo": "",
+    "targetRole": "teacher",
+    "logId": 1015,
+    "read": true,
+    "createdAt": "2026-06-09 18:00"
+  },
+  {
+    "id": 10013,
+    "type": "info",
+    "title": "数据备份提醒",
+    "content": "本周共有 24 条日志记录，请及时导出数据备份。",
+    "targetStudentNo": "",
+    "targetRole": "admin",
+    "logId": null,
+    "read": false,
+    "createdAt": "2026-06-24 08:00"
+  },
+  {
+    "id": 10014,
+    "type": "info",
+    "title": "系统升级通知",
+    "content": "日志管理系统已升级至 v2.1，新增审批历史查看和班级统计功能。",
+    "targetStudentNo": "",
+    "targetRole": "admin",
+    "logId": null,
+    "read": true,
+    "createdAt": "2026-06-20 09:00"
   },
   {
     "id": 10009,
@@ -85,6 +104,7 @@
     "title": "系统公告：期末日志填报提醒",
     "content": "期末考试周临近，请各位同学及时完成本周班级日志填报，逾期未提交将影响班级考勤记录。",
     "targetStudentNo": "",
+    "targetRole": "",
     "logId": null,
     "read": false,
     "createdAt": "2026-06-22 09:00"
@@ -93,30 +113,11 @@
     "id": 10010,
     "type": "info",
     "title": "系统公告：数据备份通知",
-    "content": "系统将于本周五 22:00 进行例行数据备份维护，届时部分功能可能暂不可用，请提前做好数据导出。",
+    "content": "系统将于本周五 22:00 进行例行数据备份维护，届时部分功能可能暂不可用。",
     "targetStudentNo": "",
+    "targetRole": "",
     "logId": null,
     "read": true,
     "createdAt": "2026-06-18 10:00"
-  },
-  {
-    "id": 10011,
-    "type": "warning",
-    "title": "日志被退回",
-    "content": "您提交的「操作系统原理」日志已退回：迟到信息和请假学生姓名需要补充。",
-    "targetStudentNo": "2024240191",
-    "logId": 1002,
-    "read": false,
-    "createdAt": "2026-06-11 15:00"
-  },
-  {
-    "id": 10012,
-    "type": "success",
-    "title": "日志审批通过",
-    "content": "您提交的「数据结构与算法」日志已审批通过：内容详实，审批通过。",
-    "targetStudentNo": "2024240191",
-    "logId": 1003,
-    "read": true,
-    "createdAt": "2026-06-18 14:30"
   }
 ]
